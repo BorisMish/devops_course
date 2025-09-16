@@ -1,0 +1,45 @@
+# Описываем этапы нашего пайплайна
+stages:
+  - test
+  - build
+  - deploy
+
+include:
+  template: Jobs/SAST.gitlab-ci.yml
+
+sast:
+  stage: test
+
+build_image:
+  stage: build
+  script:
+    - docker build -f ./environment/local/Dockerfile -t registry.gitlab.com/courses7451947/devops_course:$CI_COMMIT_SHA .
+  tags:
+    - actpro_shell_runner
+  #when: manual
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_ACCESS_TOKEN registry.gitlab.com 
+  script:
+    - docker push registry.gitlab.com/courses7451947/devops_course:$CI_COMMIT_SHA
+  tags:
+    - actpro_shell_runner
+
+deploy_image:
+  needs:
+    - push_image
+  stage: deploy
+  before_script:
+    - chmod 400 $SSH_P_KEY
+    - scp -o StrictHostKeyChecking=no -i $SSH_P_KEY ./environment/local/docker-compose.yml ubuntu@3.64.52.52:/home/ubuntu
+  script:
+    - ssh -o StrictHostKeyChecking=no -i $SSH_P_KEY ubuntu@3.64.52.52 "
+        docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_ACCESS_TOKEN registry.gitlab.com &&
+        DOCKER_IMAGE_TAG=$CI_COMMIT_SHA docker compose -f docker-compose.yml down &&
+        DOCKER_IMAGE_TAG=$CI_COMMIT_SHA docker compose -f docker-compose.yml up -d"
+  tags:
+    - actpro_shell_runner

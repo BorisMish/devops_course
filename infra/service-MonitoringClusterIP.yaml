@@ -1,0 +1,16 @@
+# my-app-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+  namespace: default
+  labels:
+    app: my-app
+spec:
+  selector:
+    app: my-app        
+  ports:
+    - name: http
+      port: 8000              # кластерний порт сервісу
+      targetPort: 8000        # контейнерний порт у поді, який слухає /metrics
+  type: ClusterIP

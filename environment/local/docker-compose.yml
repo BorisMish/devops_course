@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  courses:
+    image: coursesapp
+    container_name: courses_app
+    restart: on-failure
+    ports:
+      - "8081:8000"
+    networks:
+      - ces-net
+networks:
+  ces-net:
+    driver: bridge

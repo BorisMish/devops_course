@@ -1,0 +1,12 @@
+# пример kind-config.yaml с портами
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080  # порт внутри kind
+        hostPort: 8000        # порт на хосте
+        protocol: TCP
+  - role: worker
+  - role: worker
+  - role: worker

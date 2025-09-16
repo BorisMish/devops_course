@@ -1,0 +1,55 @@
+name: Build & Push Docker (per-branch)
+
+on:
+  push:
+    branches: ["**"]     # собираем на каждую ветку
+  workflow_dispatch:      # возможность запустить руками из Actions
+
+permissions:
+  contents: read
+  packages: write         # нужно для push в ghcr.io
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Приведём owner/repo к нижнему регистру (GHCR/Docker требуют lowercase)
+      - name: Prepare vars (lowercase)
+        id: vars
+        run: |
+          echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+          echo "REPO_LC=${GITHUB_REPOSITORY##*/}"     >> $GITHUB_ENV
+          echo "REPO_LC=$(echo $REPO_LC | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.OWNER_LC }}/${{ env.REPO_LC }}
+          tags: |
+            type=ref,event=branch          # :<branch>, автоматом сделает slug
+            type=sha,format=short          # :sha-<short>
+            type=raw,value=latest,enable={{is_default_branch}}  # latest для default-ветки
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./environment/local/Dockerfile 
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

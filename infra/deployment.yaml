@@ -19,7 +19,7 @@ spec:
         app: my-app
     spec:
       containers:
-      - image: coursesapp:latest
+      - image: ghcr.io/borismish/devops_course:main
         imagePullPolicy: IfNotPresent
         name: web-app
         ports:

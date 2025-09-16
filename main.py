@@ -7,7 +7,7 @@ app = FastAPI()
 
 @app.get('/')
 async def main():
-    return {'key': 'hello test v2'}
+    return {'key': 'hello test v3'}
 
 
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
